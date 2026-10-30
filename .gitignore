@@ -1,0 +1,24 @@
+# Entorno virtual
+.venv/
+venv/
+
+# Variables de entorno (claves reales)
+.env
+
+# Índice de ChromaDB (se regenera con ingest.py)
+chroma_db/
+
+# Base de datos de la memoria (checkpointer SQLite)
+*.sqlite
+*.db
+
+# Python
+__pycache__/
+*.pyc
+
+# Tests
+.pytest_cache/
+
+# Editor / sistema
+.vscode/
+.DS_Store

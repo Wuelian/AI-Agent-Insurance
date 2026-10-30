@@ -1,0 +1,52 @@
+[
+  {
+    "numero_siniestro": "S-5001",
+    "numero_poliza": "P-10023",
+    "fecha": "2024-06-12",
+    "tipo": "danos_propios",
+    "descripcion": "Colisión con otro vehículo en rotonda",
+    "importe_estimado": 1200.00,
+    "importe_pagado": 900.00,
+    "estado": "cerrado_pagado"
+  },
+  {
+    "numero_siniestro": "S-5002",
+    "numero_poliza": "P-10087",
+    "fecha": "2024-09-03",
+    "tipo": "danos_agua",
+    "descripcion": "Rotura de tubería en cocina, daños en suelo y mobiliario",
+    "importe_estimado": 2500.00,
+    "importe_pagado": null,
+    "estado": "en_revision"
+  },
+  {
+    "numero_siniestro": "S-5003",
+    "numero_poliza": "P-10312",
+    "fecha": "2024-10-20",
+    "tipo": "robo",
+    "descripcion": "Robo con fuerza en vivienda, sustracción de joyas y electrónica",
+    "importe_estimado": 8500.00,
+    "importe_pagado": null,
+    "estado": "pendiente_derivacion_humana"
+  },
+  {
+    "numero_siniestro": "S-5004",
+    "numero_poliza": "P-10023",
+    "fecha": "2023-12-05",
+    "tipo": "lunas",
+    "descripcion": "Rotura de parabrisas por impacto de piedra",
+    "importe_estimado": 350.00,
+    "importe_pagado": 350.00,
+    "estado": "cerrado_pagado"
+  },
+  {
+    "numero_siniestro": "S-5005",
+    "numero_poliza": "P-10399",
+    "fecha": "2024-08-15",
+    "tipo": "urgencias",
+    "descripcion": "Atención de urgencias por fractura de tobillo",
+    "importe_estimado": 0,
+    "importe_pagado": 0,
+    "estado": "cerrado_sin_coste_adicional"
+  }
+]

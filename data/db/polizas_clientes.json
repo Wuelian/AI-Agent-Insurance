@@ -1,0 +1,68 @@
+[
+  {
+    "numero_poliza": "P-10023",
+    "titular": "Laura Gómez Pérez",
+    "producto": "auto",
+    "fecha_inicio": "2024-03-01",
+    "fecha_fin": "2025-03-01",
+    "prima_anual": 410.50,
+    "coberturas": ["responsabilidad_civil", "danos_propios", "robo", "lunas", "asistencia_viaje"],
+    "franquicia_danos_propios": 300,
+    "estado": "vigente"
+  },
+  {
+    "numero_poliza": "P-10087",
+    "titular": "Javier Martín Ruiz",
+    "producto": "hogar",
+    "fecha_inicio": "2023-11-15",
+    "fecha_fin": "2024-11-15",
+    "prima_anual": 180.00,
+    "coberturas": ["incendio", "danos_agua", "robo", "responsabilidad_civil", "cristales"],
+    "franquicia_danos_agua": 100,
+    "estado": "vigente"
+  },
+  {
+    "numero_poliza": "P-10140",
+    "titular": "Carmen Díaz Soto",
+    "producto": "salud",
+    "fecha_inicio": "2022-06-01",
+    "fecha_fin": "2025-06-01",
+    "prima_anual": 650.00,
+    "coberturas": ["asistencia_primaria", "especialistas", "hospitalizacion", "pruebas_diagnosticas"],
+    "carencias_activas": [],
+    "estado": "vigente"
+  },
+  {
+    "numero_poliza": "P-10201",
+    "titular": "Alberto Sánchez López",
+    "producto": "auto",
+    "fecha_inicio": "2021-05-10",
+    "fecha_fin": "2024-05-10",
+    "prima_anual": 395.00,
+    "coberturas": ["responsabilidad_civil", "incendio", "lunas"],
+    "franquicia_danos_propios": null,
+    "estado": "vencida"
+  },
+  {
+    "numero_poliza": "P-10312",
+    "titular": "Marta Fernández Castro",
+    "producto": "hogar",
+    "fecha_inicio": "2024-01-20",
+    "fecha_fin": "2025-01-20",
+    "prima_anual": 210.00,
+    "coberturas": ["incendio", "danos_agua", "robo", "responsabilidad_civil", "cristales", "asistencia_hogar"],
+    "franquicia_danos_agua": 100,
+    "estado": "vigente"
+  },
+  {
+    "numero_poliza": "P-10399",
+    "titular": "Diego Romero Vega",
+    "producto": "salud",
+    "fecha_inicio": "2024-02-01",
+    "fecha_fin": "2025-02-01",
+    "prima_anual": 580.00,
+    "coberturas": ["asistencia_primaria", "especialistas", "urgencias"],
+    "carencias_activas": ["hospitalizacion_medica", "hospitalizacion_quirurgica"],
+    "estado": "vigente"
+  }
+]

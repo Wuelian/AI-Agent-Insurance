@@ -1,0 +1,7 @@
+langgraph
+langchain
+langchain-core
+chromadb
+langchain-chroma
+pydantic
+python-dotenv
