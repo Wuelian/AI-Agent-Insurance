@@ -5,3 +5,5 @@ chromadb
 langchain-chroma
 pydantic
 python-dotenv
+langchain-ollama
+ollama

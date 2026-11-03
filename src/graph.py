@@ -34,6 +34,8 @@ if __name__ == "__main__":
     for mensaje in resultado["messages"]:
         print(f"{mensaje['role']}: {mensaje['content']}")
 
+
+
     grafo_echo = init(echo)
     estado_inicial_echo = {
         "messages": [{"role": "user", "content": texto}],
