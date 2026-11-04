@@ -1,10 +1,20 @@
+# Agentes y LLM
 langgraph
 langchain
 langchain-core
+langchain-ollama
+
+
+# RAG
 chromadb
 langchain-chroma
+langchain-text-splitters
+ollama
+
+# Utilidades
 pydantic
 python-dotenv
-langchain-ollama
-ollama
-google-genai
+truststore
+
+# Tests
+pytest
