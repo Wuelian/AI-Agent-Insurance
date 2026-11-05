@@ -1,11 +1,5 @@
 from glob import glob
 import os 
-import json
-import numpy as np
-from google import genai
-from dotenv import load_dotenv
-#modelo de lenguaje local
-import ollama
 #configuracion de certificados SSL para poder usar la API de Ollama y Gemini en Windows
 import truststore
 truststore.inject_into_ssl()
@@ -22,8 +16,8 @@ from chromadb.utils.embedding_functions import OllamaEmbeddingFunction
 RUTA_DOCS = "./data/docs/*.md"
 
 #modelo que usaremos para generar embeddings de los documentos
-Model_embeding = "qwen3-embedding:0.6b" 
-# Model_embeding = "hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:latest"
+# Model_embeding = "qwen3-embedding:0.6b" 
+Model_embeding = "hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:latest"
 
 #Base de datos vectorial ChromaDB
 chroma_client = chromadb.PersistentClient(path="chroma_db/")

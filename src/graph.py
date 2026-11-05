@@ -1,6 +1,7 @@
 from langgraph.graph import StateGraph, START, END
-from state import AgentState
+from src.state import AgentState
 from typing import Callable
+from src.nodes.rag import nodo_rag
 
 
 def trivial_response(estado: AgentState):
@@ -22,6 +23,9 @@ def init (nodo : Callable):
     return graph
     
 if __name__ == "__main__":
+    
+    # Paso 1 ----------------------------
+
     texto = input("Tú: ")
 
     grafo_trivial = init(trivial_response)
@@ -45,6 +49,17 @@ if __name__ == "__main__":
         print(f"{mensaje['role']}: {mensaje['content']}")
 
 
+    # Paso 4 ----------------------------
+    grafo_rag = init(nodo_rag)
+    pregunta_user_story1 = "¿Mi seguro de auto cubre lunas?"
+    pregunta_user_story5 = "¿Cubre mi seguro de salud una cirugía estética?"
+    estado_inicial_rag = {
+        "messages": [{"role": "user", "content": pregunta_user_story1}],
+        "product_type": "auto",
+    }
+    resultado_rag = grafo_rag.invoke(estado_inicial_rag)
+    for mensaje in resultado_rag["messages"]:
+        print(f"{mensaje['role']}: {mensaje['content']}")
 
 
 
