@@ -43,6 +43,14 @@ def buscar_en_documentacion (query: str, producto: str) -> list[str]:
     #Devuelve la respuesta a la query, como solo tenemos una solo devuelve la primera respuesta
     return resultado["documents"][0]
 
+def abrir_siniestro ():
+     return "abrir siniestro (To-Do)"
+
+
+def marcar_fuera_de_dominio ():
+    return "fuera_de_dominio"
+
+
 
 #Pruebas ------------------------------------------------------------------
 #ctrl k + ctrl u para quitar comentarios 

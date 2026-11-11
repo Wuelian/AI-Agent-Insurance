@@ -4,6 +4,9 @@ langchain
 langchain-core
 langchain-ollama
 google-genai
+langchain-google-genai
+langchain "langchain[google-genai]"
+
 
 
 # RAG

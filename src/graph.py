@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, START, END
 from src.state import AgentState
 from typing import Callable
-from src.nodes.rag import nodo_rag
+from src.nodes.rag import rag_response
 
 
 def trivial_response(estado: AgentState):
@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
 
     # Paso 4 ----------------------------
-    grafo_rag = init(nodo_rag)
+    grafo_rag = init(rag_response)
     pregunta_user_story1 = "¿Mi seguro de auto cubre lunas?"
     pregunta_user_story5 = "¿Cubre mi seguro de salud una cirugía estética?"
     estado_inicial_rag = {

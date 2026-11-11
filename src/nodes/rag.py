@@ -59,7 +59,7 @@ def respuesta_llm (query: str, producto, search_results) -> str:
 #     #devuelve la respuesta del LLM usando la query, el producto y los resultados de la busqueda en la documentacion
 #     return respuesta_llm(query, producto, search_results)
 
-def nodo_rag(estado: AgentState) -> dict:
+def rag_response(estado: AgentState) -> dict:
     query = estado["messages"][-1]["content"]
     producto = estado["product_type"]
 
