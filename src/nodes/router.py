@@ -7,15 +7,51 @@ from langchain.agents import create_agent
 
 
 
+
+
 truststore.inject_into_ssl()
 load_dotenv()
 client = genai.Client()
 
-intent = ["consulta_cobertura", "consulta_poliza", "consulta_siniestro", "abrir_siniestro", "fuera_de_dominio"]
+intent = ["consulta_cobertura", "consulta_poliza", "consulta_siniestro", "abrir_siniestro", "fuera_dominio"]
 
 SYSTEM_PROMPT = f"Eres AsegurIA, el asistente virtual de Seguros Horizonte." \
 "En funcion del mensaje que recibas vas a clasificar la intencion del cliente en una de las siguientes categorias: " \
 "{intet}, y devolveras una respuesta estructurada para hacer function calling" \
+
+
+#Structured output
+class Answer(BaseModel):
+    """Clasificación de la consulta del cliente, para dirigir el flujo del agente."""
+
+    intent: Literal[
+        "consulta_cobertura",
+        "consulta_poliza",
+        "consulta_siniestro",
+        "abrir_siniestro",
+        "fuera_dominio",
+    ] = Field(
+        description=(
+            "Intención principal del cliente:\n"
+            "- consulta_cobertura: dudas generales sobre qué cubre o no un seguro, "
+            "exclusiones, carencias, franquicias, plazos o trámites.\n"
+            "- consulta_poliza: quiere conocer los datos o el estado de SU póliza concreta.\n"
+            "- consulta_siniestro: quiere saber cómo va un siniestro que ya existe.\n"
+            "- abrir_siniestro: ha sufrido un daño o incidente y quiere declararlo, "
+            "aunque también pregunte qué hacer o si está cubierto.\n"
+            "- fuera_dominio: la consulta no tiene relación con seguros "
+            "(por ejemplo, el tiempo, deportes o recetas)."
+        )
+    )
+    product_type: Optional[Literal["auto", "hogar", "salud"]] = Field(
+        default=None,
+        description=(
+            "Seguro al que se refiere la consulta. "
+            "Déjalo vacío si el cliente no lo indica o si es fuera de dominio."
+        ),
+    )
+
+
 
 
 
@@ -103,29 +139,17 @@ abrir_siniestro_tool = {
     ),
 
 }
-marcar_fuera_de_dominio_tool = {
-"type": "function",
-    "name": "marcar_fuera_de_dominio",
-    "description": (
-        """devuelve el literal 'fuera_de_dominio' cuando no se usa ninguna de las otras tools"""
-    ),
 
-}
 
-tools = [consulta_cobertura_tool,consultar_poliza_tool,consultar_siniestro_tool,abrir_siniestro_tool,marcar_fuera_de_dominio_tool]
+tools = [consulta_cobertura_tool,consultar_poliza_tool,consultar_siniestro_tool,abrir_siniestro_tool]
 
 
 agent = create_agent(
     model="gemini-3.5-flash-lite",
     tools=tools,
     system_prompt= SYSTEM_PROMPT,
+    response_format=Answer
 )
-
-agent_con_tools = agent.bind_tools(tools)
-
-def decidir_tool (mensaje : str):
-    agent_con_tools.invoke (mensaje)
-    
 
 
 
