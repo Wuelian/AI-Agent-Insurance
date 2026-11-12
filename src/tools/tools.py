@@ -1,9 +1,9 @@
 #las funciones de esta clase son funciones a las que el agente de 
 #IA podrá acceder posteriormente 
-import glob
 import json
 import chromadb
 from langchain.tools import tool
+from typing import Optional,Literal
 
 
 ruta_polizas = "./data/db/polizas_clientes.json"
@@ -66,7 +66,7 @@ def consultar_siniestro(numero_siniestro: str) -> dict:
 
 
 @tool(parse_docstring=True)
-def buscar_en_documentacion(query: str, producto: Optional[str] = None) -> list[str]:
+def buscar_en_documentacion(query: str, producto: Optional[Literal["auto", "hogar", "salud","general"]] = None) -> list[str]:
     """Busca en la documentación oficial de Seguros Horizonte (condiciones
     generales y preguntas frecuentes) los fragmentos que responden a una
     duda sobre coberturas, exclusiones, carencias, franquicias, plazos o
@@ -91,9 +91,11 @@ def buscar_en_documentacion(query: str, producto: Optional[str] = None) -> list[
 
     resultado = collection.query(**argumentos)
     return resultado["documents"][0]
-@tool
-def abrir_siniestro ():
-     return "abrir siniestro (To-Do)"
+
+
+# @tool
+# def abrir_siniestro ():
+#      return "abrir siniestro (To-Do)"
 
 
 
