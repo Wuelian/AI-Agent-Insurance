@@ -73,7 +73,7 @@ def nodo_router (estado: AgentState) -> dict:
 
 
 if __name__ == "__main__":
-    
+
     user_history_2 = "Quiero saber el estado de mi póliza P-10023" #Devuelve datos del dataset 
     user_history_6 = "¿qué tiempo hace hoy?" #fuera de domino, el agente indica que no puede ayudar     
     #prueba simple historia de usuario 1 y 2
@@ -90,6 +90,22 @@ if __name__ == "__main__":
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#APUNTES
 
 # asi se hace a mano 
 
