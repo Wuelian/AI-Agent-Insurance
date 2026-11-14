@@ -6,37 +6,17 @@ from langchain.agents import create_agent
 from src.state import AgentState
 import json
 
+from src.prompts.prompts  import ROUTER_SYSTEM_PROMPT,INTENT_DESCRIPTION
+
 
 #ToolMessage muestra las salidas de las ejecuciones de las Tools 
 from langchain.messages import ToolMessage
 
-from src.tools.tools import consultar_poliza,consultar_siniestro,buscar_en_documentacion    
+from src.tools.tools import consultar_poliza,consultar_siniestro,buscar_en_documentacion,abrir_siniestro    
 
 truststore.inject_into_ssl()
 load_dotenv()
 
-
-SYSTEM_PROMPT = """Eres AsegurIA, el asistente virtual de Seguros Horizonte.
-Atiendes consultas de clientes sobre sus seguros de auto, hogar y salud.
-
-Tu tarea es entender qué necesita el cliente y obtener la información
-necesaria con las herramientas disponibles:
-- Para dudas sobre coberturas, exclusiones, carencias, franquicias, plazos
-  o trámites, usa buscar_en_documentacion.
-- Para los datos o el estado de una póliza concreta, usa consultar_poliza.
-- Para el estado de un siniestro ya abierto, usa consultar_siniestro.
-
-Reglas:
-1. No inventes datos de pólizas, siniestros, coberturas, importes ni plazos.
-   Toda la información debe salir de las herramientas.
-2. Si para usar una herramienta te falta un dato (por ejemplo, el número de
-   póliza o de siniestro), no lo supongas: pídeselo al cliente.
-3. Si una herramienta devuelve un error (por ejemplo, una póliza que no
-   existe), no lo ocultes ni lo sustituyas por datos inventados.
-4. Si la consulta no tiene relación con seguros, no uses ninguna herramienta.
-5. Al terminar, clasifica la consulta del cliente según el formato de
-   respuesta indicado.
-"""
 
 #Structured output
 class Answer(BaseModel):
@@ -47,28 +27,7 @@ class Answer(BaseModel):
         "fuera_dominio",
     ] = Field(
         description=(
-            "Clasifica el mensaje del cliente según su TEMA, no según si has usado "
-        "herramientas.\n"
-        "REGLA PRINCIPAL: si el mensaje contiene varias consultas y AL MENOS UNA "
-        "trata de seguros, clasifícalo como dentro_dominio, aunque el resto no "
-        "tenga relación con seguros.\n"
-        "\n"
-        "- dentro_dominio: alguna parte del mensaje trata de:\n"
-        "  1. Dudas generales sobre qué cubre o no un seguro: coberturas, "
-        "exclusiones, carencias, franquicias, plazos o trámites.\n"
-        "  2. Los datos o el estado de una póliza concreta del cliente.\n"
-        "  3. El estado de un siniestro que ya existe.\n"
-        "  4. Un daño o incidente que el cliente ha sufrido y quiere declarar, "
-        "aunque también pregunte qué hacer o si está cubierto.\n"
-        "  También es dentro_dominio si es una consulta de seguros a la que le "
-        "falta un dato (por ejemplo, el número de póliza), o un saludo o "
-        "agradecimiento.\n"
-        "\n"
-        "- fuera_dominio: NINGUNA parte del mensaje trata de seguros "
-        "(por ejemplo, solo pregunta por el tiempo, deportes o recetas).\n"
-        "\n"
-        "Ejemplo: 'Quiero abrir un siniestro por un accidente. ¿Qué tiempo hace "
-        "hoy?' es dentro_dominio."    
+              INTENT_DESCRIPTION
         )
     )
     product_type: Optional[Literal["auto", "hogar", "salud"]] = Field(
@@ -79,11 +38,10 @@ class Answer(BaseModel):
         ),
     )
 
-
 agent = create_agent(
     model="google_genai:gemini-3.5-flash-lite",
-    tools=[consultar_siniestro,consultar_poliza,buscar_en_documentacion], #falta añadir abrir siniestro que no esta implementado
-    system_prompt= SYSTEM_PROMPT,
+    tools=[consultar_siniestro,consultar_poliza,buscar_en_documentacion,abrir_siniestro], #falta añadir abrir siniestro que no esta implementado
+    system_prompt= ROUTER_SYSTEM_PROMPT,
     response_format=Answer
 )
 
@@ -115,6 +73,7 @@ def nodo_router (estado: AgentState) -> dict:
 
 
 if __name__ == "__main__":
+    
     user_history_2 = "Quiero saber el estado de mi póliza P-10023" #Devuelve datos del dataset 
     user_history_6 = "¿qué tiempo hace hoy?" #fuera de domino, el agente indica que no puede ayudar     
     #prueba simple historia de usuario 1 y 2
