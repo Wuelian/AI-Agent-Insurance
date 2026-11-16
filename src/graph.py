@@ -75,7 +75,9 @@ if __name__ == "__main__":
         mensaje.pretty_print()
     print("intent:", resultado_router.get("intent"))
     print("tool_results:", resultado_router.get("tool_results"))
+
     
+    print(grafo_router.get_graph().draw_mermaid())
 
 
 # def init_trivial_response():

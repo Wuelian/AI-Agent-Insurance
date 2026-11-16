@@ -56,12 +56,14 @@ def consultar_siniestro(numero_siniestro: str) -> dict:
 @tool(description=BUSCAR_EN_DOCUMENTACION_DOCSTRING)
 def buscar_en_documentacion(query: str, producto: Optional[Literal["auto", "hogar", "salud","general"]] = None) -> list[str]:
 
-    argumentos = {"query_texts": [query], "n_results": 5}
+    argumentos = {"query_texts": [query], "n_results": 3}
     if producto is not None:
         argumentos["where"] = {"producto": producto}
 
     resultado = collection.query(**argumentos)
     return resultado["documents"][0]
+
+
 
 @tool(description=ABRIR_SINIESTRO_DOCSTRING)
 def abrir_siniestro (numero_poliza: str, descripcion: str, fecha: str, importe_estimado: float) -> dict:

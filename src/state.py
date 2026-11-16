@@ -17,9 +17,11 @@ class AgentState(TypedDict):
                                     # "fuera_dominio" | "dentro_dominio" (sustituye a los anteriores)
     product_type: Optional[str]    # "auto" | "hogar" | "salud"
     policy_number: Optional[str]
-    claim_data: Optional[dict]
+    claim_data: Optional[dict] #se usaba para coger los daton del siniestro, en nuestro caso no lo usamos
     retrieved_docs: Optional[List[str]]
     requires_human: bool
+    queja_formal :  Optional[str] #queja formal del usuario
     tool_results: Optional[dict]   # sin reducer: cada turno sustituye al anterior
+    interrupt_reason : Optional[str] #razon de la interrupcion
 
 

@@ -6,7 +6,7 @@ from langchain.agents import create_agent
 from src.state import AgentState
 import json
 
-from src.prompts.prompts  import ROUTER_SYSTEM_PROMPT,INTENT_DESCRIPTION
+from src.prompts.prompts  import ROUTER_SYSTEM_PROMPT,INTENT_DESCRIPTION,QUEJA_FORMAL_DESCRIPTION
 
 
 #ToolMessage muestra las salidas de las ejecuciones de las Tools 
@@ -37,6 +37,14 @@ class Answer(BaseModel):
             "Déjalo vacío si el cliente no lo indica o si es fuera de dominio."
         ),
     )
+    queja_formal: Optional[str] = Field (
+        default = None,
+        description = (
+                QUEJA_FORMAL_DESCRIPTION
+        )
+
+    )
+
 
 agent = create_agent(
     model="google_genai:gemini-3.5-flash-lite",
@@ -49,8 +57,9 @@ def nodo_router (estado: AgentState) -> dict:
     query = estado["messages"][-1].content #solicitud/consulta del usuario
     #ejecuta las tools si es que las necesita y devuelve dentro o fuera de dominio
     result =  agent.invoke ({"messages": [{"role": "user", "content": query}]})
-    answer = result["structured_response"].intent #devuelve dentro_dominio o fuera_dominio
-    estado["intent"] = result["structured_response"].intent
+    
+    # answer = result["structured_response"].intent #devuelve dentro_dominio o fuera_dominio
+    # estado["intent"] = result["structured_response"].intent
 
     # por hacer : tenemos la salida del agente pero 
     # se la tenemos que pasar al estado para usarlo despues en el grafo
@@ -69,6 +78,7 @@ def nodo_router (estado: AgentState) -> dict:
         "intent": intent,
         "product_type": result["structured_response"].product_type,
         "tool_results": tool_results,
+        "queja_formal": result["structured_response"].queja_formal
     }
 
 
@@ -87,6 +97,12 @@ if __name__ == "__main__":
             print(m.name, "→", m.content)
 
     print (result["structured_response"].intent)
+
+
+
+
+
+
 
 
 

@@ -37,6 +37,30 @@ REGLA PRINCIPAL: si el mensaje contiene varias consultas y AL MENOS UNA trata de
 
 Ejemplo: 'Quiero abrir un siniestro por un accidente. ¿Qué tiempo hace hoy?' es dentro_dominio."""
 
+QUEJA_FORMAL_DESCRIPTION = """Resumen breve de la queja formal del cliente, con sus propias palabras.
+Rellénalo SOLO si el cliente expresa su voluntad de reclamar oficialmente; en cualquier otro caso, déjalo vacío.
+
+Es queja formal (rellenar):
+- 'Quiero presentar una reclamación formal por la gestión de mi siniestro.'
+- 'Exijo que se revise la denegación de mi siniestro S-5001.'
+- 'Quiero que conste por escrito mi disconformidad con la tasación.'
+- 'Voy a acudir al Defensor del Cliente si no me lo solucionan.'
+- 'Quiero poner una hoja de reclamaciones.'
+- 'Voy a presentar una reclamación ante la Dirección General de Seguros.'
+- 'Mi abogado se pondrá en contacto con ustedes.'
+- 'Quiero hablar con un responsable para presentar una queja.'
+
+NO es queja formal (dejar vacío):
+- 'Estoy harto, llevo un mes esperando.' (malestar, sin intención de reclamar)
+- 'Qué pena que no me cubra eso.' (decepción)
+- 'Vuestro servicio es un poco lento.' (opinión)
+- '¿Cómo puedo poner una reclamación?' (pide información sobre el trámite)
+
+Señales habituales de queja formal: reclamación, reclamar, queja formal, hoja de reclamaciones,
+que conste por escrito, o mencionar al Defensor del Cliente, la Dirección General de Seguros, un abogado o una denuncia."""
+
+
+
 
 #------------------------------ Prompts para la clase tools ------------------------------
 
@@ -77,6 +101,10 @@ trámites.
 Úsala para preguntas generales sobre qué cubre o no cubre un seguro, o
 sobre cómo hacer un trámite. No la uses para consultar los datos de
 una póliza o un siniestro concretos.
+Si los fragmentos no contienen la información necesaria para responder,
+no la deduzcas ni la completes con conocimiento general. Di claramente
+que no lo encuentras en la documentación disponible.
+
 
 Args:
     query: Lo esencial de la duda del cliente, en pocas palabras
