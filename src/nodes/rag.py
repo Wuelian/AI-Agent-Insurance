@@ -34,7 +34,7 @@ PREGUNTA DEL CLIENTE:
 {pregunta}
 """
 
-def respuesta_llm (query: str, producto, search_results) -> str:
+def respuesta_llm (query: str, search_results) -> str:
 
     fragmentos = "\n\n".join([f"Fragmento {i+1}: {doc}" for i, doc in enumerate(search_results)])
 

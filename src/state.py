@@ -23,5 +23,5 @@ class AgentState(TypedDict):
     queja_formal :  Optional[str] #queja formal del usuario
     tool_results: Optional[dict]   # sin reducer: cada turno sustituye al anterior
     interrupt_reason : Optional[str] #razon de la interrupcion
-
+    documentacion_insuficiente : Optional[bool] #documentacion recogida del RAG insuficiente
 

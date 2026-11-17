@@ -6,7 +6,7 @@ from langchain.agents import create_agent
 from src.state import AgentState
 import json
 
-from src.prompts.prompts  import ROUTER_SYSTEM_PROMPT,INTENT_DESCRIPTION,QUEJA_FORMAL_DESCRIPTION
+from src.prompts.prompts  import ROUTER_SYSTEM_PROMPT,INTENT_DESCRIPTION,QUEJA_FORMAL_DESCRIPTION,DOCUMENTACION_INSUFICIENTE_DESCRIPTION
 
 
 #ToolMessage muestra las salidas de las ejecuciones de las Tools 
@@ -42,9 +42,13 @@ class Answer(BaseModel):
         description = (
                 QUEJA_FORMAL_DESCRIPTION
         )
-
     )
-
+    documentacion_insuficiente: Optional [bool]= Field(
+        default = None,
+        description = (
+                DOCUMENTACION_INSUFICIENTE_DESCRIPTION
+        )
+    )
 
 agent = create_agent(
     model="google_genai:gemini-3.5-flash-lite",
@@ -64,6 +68,7 @@ def nodo_router (estado: AgentState) -> dict:
     # por hacer : tenemos la salida del agente pero 
     # se la tenemos que pasar al estado para usarlo despues en el grafo
 
+
     tool_results = {}
     for m in result["messages"]:
         if m.type == "tool":
@@ -74,11 +79,20 @@ def nodo_router (estado: AgentState) -> dict:
     
     intent = "dentro_dominio" if tool_results else result["structured_response"].intent
 
+    #en caso de que no se pueda responder a la consulta del usuario con la documentacion
+    answer = result["structured_response"]
+    documentacion_insuficiente = (
+        answer.documentacion_insuficiente
+        if "buscar_en_documentacion" in tool_results
+        else None
+    )
+
     return {
         "intent": intent,
         "product_type": result["structured_response"].product_type,
         "tool_results": tool_results,
-        "queja_formal": result["structured_response"].queja_formal
+        "queja_formal": result["structured_response"].queja_formal,
+        "documentacion_insuficiente": documentacion_insuficiente
     }
 
 
