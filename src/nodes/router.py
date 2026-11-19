@@ -5,6 +5,9 @@ from typing import Literal, Optional
 from langchain.agents import create_agent
 from src.state import AgentState
 import json
+from src.llm.llm import llm 
+from langchain.messages import SystemMessage, HumanMessage
+
 
 from src.prompts.prompts  import ROUTER_SYSTEM_PROMPT,INTENT_DESCRIPTION,QUEJA_FORMAL_DESCRIPTION,DOCUMENTACION_INSUFICIENTE_DESCRIPTION
 
@@ -50,6 +53,8 @@ class Answer(BaseModel):
         )
     )
 
+
+#------------------ Usar LLM con create Agents ------------------
 agent = create_agent(
     model="google_genai:gemini-3.5-flash-lite",
     tools=[consultar_siniestro,consultar_poliza,buscar_en_documentacion,abrir_siniestro], #falta añadir abrir siniestro que no esta implementado
@@ -57,41 +62,103 @@ agent = create_agent(
     response_format=Answer
 )
 
+
+# ------------------ Usar LLM con bind tools ------------------
+tools = [consultar_siniestro,consultar_poliza,buscar_en_documentacion,abrir_siniestro]
+tools_por_nombre = {t.name: t for t in tools}
+#usamos bind tools para pasarle las tools que necesita el llm
+llm_con_tools = llm.bind_tools(tools= tools)
+#creamos un clasificador para que posteriormente nos saque la salida estructurada de la llm despues de invocarla 
+clasificador = llm.with_structured_output(Answer)
+# Numero maximo de vueltas que se da para el LLM con las tools 
+MAX_VUELTAS = 5 
+
+
+
+
 def nodo_router (estado: AgentState) -> dict:
+
+    # # ------------------ Con create agent ---------------------------
+    # query = estado["messages"][-1].content #solicitud/consulta del usuario
+    # #ejecuta las tools si es que las necesita y devuelve dentro o fuera de dominio
+    # result =  agent.invoke ({"messages": [{"role": "user", "content": query}]})
+    
+    # # answer = result["structured_response"].intent #devuelve dentro_dominio o fuera_dominio
+    # # estado["intent"] = result["structured_response"].intent
+
+    # # por hacer : tenemos la salida del agente pero 
+    # # se la tenemos que pasar al estado para usarlo despues en el grafo
+    # tool_results = {}
+    # for m in result["messages"]:
+    #     if m.type == "tool":
+    #         try:
+    #             tool_results[m.name] = json.loads(m.content)
+    #         except (json.JSONDecodeError, TypeError):
+    #             tool_results[m.name] = m.content
+    
+    # intent = "dentro_dominio" if tool_results else result["structured_response"].intent
+
+    # #en caso de que no se pueda responder a la consulta del usuario con la documentacion
+    # answer = result["structured_response"]
+
+    # documentacion_insuficiente = (
+    #     answer.documentacion_insuficiente
+    #     if "buscar_en_documentacion" in tool_results
+    #     else None
+    # )
+
+    #------------------ haciendo un bucle con bind tools ------------------
     query = estado["messages"][-1].content #solicitud/consulta del usuario
-    #ejecuta las tools si es que las necesita y devuelve dentro o fuera de dominio
-    result =  agent.invoke ({"messages": [{"role": "user", "content": query}]})
-    
-    # answer = result["structured_response"].intent #devuelve dentro_dominio o fuera_dominio
-    # estado["intent"] = result["structured_response"].intent
 
-    # por hacer : tenemos la salida del agente pero 
-    # se la tenemos que pasar al estado para usarlo despues en el grafo
-
-
+    mensajes = [SystemMessage(content= ROUTER_SYSTEM_PROMPT), HumanMessage(content= query)]
+    #Diccionario para guardar la salida de las tools
     tool_results = {}
-    for m in result["messages"]:
-        if m.type == "tool":
-            try:
-                tool_results[m.name] = json.loads(m.content)
-            except (json.JSONDecodeError, TypeError):
-                tool_results[m.name] = m.content
-    
-    intent = "dentro_dominio" if tool_results else result["structured_response"].intent
 
-    #en caso de que no se pueda responder a la consulta del usuario con la documentacion
-    answer = result["structured_response"]
+    #vuelta manual
+    for vuelta in range(MAX_VUELTAS ):
+
+        respuesta_con_bindtools = llm_con_tools.invoke(mensajes)
+        mensajes.append(respuesta_con_bindtools)          # ← la línea que faltaba
+
+        #si no se llama a ninguna tool acaba el bucle
+        if not respuesta_con_bindtools.tool_calls:
+            #print(f"Vuelta {vuelta}: respuesta final")  --------- lo comento para que la terminal no se pete de mensajes
+            break
+
+        for llamada in respuesta_con_bindtools.tool_calls:
+            tool = tools_por_nombre[llamada["name"]]
+            resultado = tool.invoke(llamada["args"])
+            #Guarda el contenido de los resultados dentro del campo de toolsresults 
+            tool_results[llamada["name"]] = resultado   
+            
+            #Mensajes para que la LLM lea y vea los resultados 
+            mensajes.append(ToolMessage(                # para el LLM (texto)
+            content=json.dumps(resultado, ensure_ascii=False),
+            tool_call_id=llamada["id"],
+            name=llamada["name"],
+            ))
+
+    mensajes.append (HumanMessage(content="Con todo lo anterior, clasifica la consulta" \
+    " del cliente según el formato indicado."))
+
+    #devuelve la salida directamente con el formato de answer
+    respuesta_clasificada = clasificador.invoke (mensajes)
+
+    intent = "dentro_dominio" if tool_results else respuesta_clasificada.intent
+    
     documentacion_insuficiente = (
-        answer.documentacion_insuficiente
-        if "buscar_en_documentacion" in tool_results
-        else None
-    )
+            respuesta_clasificada.documentacion_insuficiente
+            if "buscar_en_documentacion" in tool_results
+            else None
+        )
 
     return {
         "intent": intent,
-        "product_type": result["structured_response"].product_type,
+        #"product_type": result["structured_response"].product_type,
+        "product_type": respuesta_clasificada.product_type,
         "tool_results": tool_results,
-        "queja_formal": result["structured_response"].queja_formal,
+        #"queja_formal": result["structured_response"].queja_formal,
+        "queja_formal": respuesta_clasificada.queja_formal,
         "documentacion_insuficiente": documentacion_insuficiente
     }
 
@@ -104,15 +171,20 @@ if __name__ == "__main__":
     #result =  agent.invoke ({"messages": [{"role": "user", "content": "¿Mi seguro de auto cubre lunas? Ademas Quiero saber el estado de mi póliza P-10023 "}]})
     
     #prueba simple historia de usuario 2 y 6
-    result =  agent.invoke ({"messages": [{"role": "user", "content": user_history_2}]})
+    # result =  agent.invoke ({"messages": [{"role": "user", "content": user_history_2}]})
     
-    for m in result["messages"]:
-        if m.type == "tool":
-            print(m.name, "→", m.content)
+    # for m in result["messages"]:
+    #     if m.type == "tool":
+    #         print(m.name, "→", m.content)
 
-    print (result["structured_response"].intent)
+    # print (result["structured_response"].intent)
 
-
+    
+    estado_inicial_prueba = {
+        "messages": [HumanMessage(content="Quiero saber el estado de mi póliza P-10023")],
+    }
+    prueba = nodo_router(estado_inicial_prueba)
+    print (prueba)
 
 
 

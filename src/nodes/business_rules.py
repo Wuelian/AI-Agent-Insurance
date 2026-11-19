@@ -1,5 +1,7 @@
 # Esta clase es para definir las reglas de negocio
 from src.state import AgentState
+from langgraph.types import interrupt
+
 
 UMBRAL = 3000
 
@@ -31,8 +33,20 @@ def documentacion_insuficiente (estado: AgentState):
         return "La consulta no puede resolverse con la documentación disponible."
     return None
 
+
+def intervencion_humano ():
+    
+    approved = interrupt("necesita humano")
+    #--- Da control al humano conectando otro sistema externo
+    return approved
+
+
+
+
 def necesita_humano(estado: AgentState):
     motivos = [
+
+        
         motivo
         for motivo in (
             importe_superado(estado),
@@ -41,11 +55,16 @@ def necesita_humano(estado: AgentState):
         )
         if motivo is not None
     ]
-
+    requiresHuman= bool(motivos) # si existen motivos entonces es true
     # TODO Paso 7: si requires_human es True, pausar con interrupt
+    if requiresHuman:
+      intervencion_humano()
+
+
+
 
     return {
-        "requires_human": bool(motivos),
+        "requires_human": requiresHuman ,
         "interrupt_reason": " ".join(motivos) if motivos else None,
     }
 

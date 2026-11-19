@@ -20,3 +20,7 @@ truststore
 
 # Tests
 pytest
+
+
+#persistencia checkpointer 
+langgraph-checkpoint-sqlite

@@ -5,7 +5,9 @@ from src.nodes.rag import rag_response
 from src.nodes.router import nodo_router
 from src.nodes.business_rules import necesita_humano
 from langgraph.types import Command, interrupt
-
+import sqlite3 
+from langgraph.checkpoint.sqlite import SqliteSaver
+import uuid
 
 
 def trivial_response(estado: AgentState):
@@ -26,7 +28,7 @@ def init (nodo : Callable):
     
     return graph
 
-def init_grafo_pruebas():
+def init_grafo_pruebas(checkpointer):
     graph = StateGraph(AgentState) #Creamos un grafo de estados con el tipo AgentState
     graph.add_node("router",nodo_router)
     
@@ -34,7 +36,8 @@ def init_grafo_pruebas():
     graph.add_edge(START, "router")
     graph.add_edge("router", "nodoNegocio")
     graph.add_edge("nodoNegocio", END)
-    graph = graph.compile() #Compilamos el grafo de estados
+    #Compilamos el grafo de estados, añadiendo el checkpointer para tener persistencia y no perder lo que hemos hecho
+    graph = graph.compile(checkpointer=checkpointer) 
     return graph    
         
         
@@ -80,7 +83,9 @@ if __name__ == "__main__":
     # for mensaje in resultado_rag["messages"]:
     #     print(f"{mensaje['role']}: {mensaje['content']}")
 
-    # Paso 5 --------------------------------------------------------
+    # Paso 5 -------------------------------------------------------- 
+    # -------------------------------------------------------- Ahora funciona con la nueva forma de usar bindTools en lugar de createAgent
+    
     # grafo_router = init(nodo_router)
     # user_history_2 = "Quiero saber el estado de mi póliza P-10023" #Devuelve datos del dataset 
     # user_history_6 = "¿qué tiempo hace hoy?" #fuera de domino, el agente indica que no puede ayudar     
@@ -110,20 +115,28 @@ if __name__ == "__main__":
 
     #Conectar nodos router y nodo negocio
 
+    #Creamos la conexion con sqlite y creamos el checkpointer
+    conexion = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
+    memoria = SqliteSaver(conexion)
+    #configuracion 
+    config = {"configurable": {"thread_id": str(uuid.uuid4())}}
+
+    
     caso_documentacion_insuficiente = "Se me ha caído la televisión y se ha roto la pantalla, ¿me la cubre?"
     caso_queja_formal = "quiero presentar una queja formal"
     caso_importe_superado = "Quiero declarar un siniestro. El 10 de noviembre de 2026 tuve un accidente con el coche: " \
     "choqué contra un muro al aparcar y se ha destrozado todo el frontal. Mi póliza es la P-10023 y el taller calcula " \
     "unos 8.000 € de reparación"
 
-    grafo_prueba = init_grafo_pruebas()
+    grafo_prueba = init_grafo_pruebas(memoria)
     estado_inicial_prueba = {
         "messages": [{"role": "user", "content": caso_importe_superado }],
             }
-    resultado_nodo_prueba = grafo_prueba.invoke(estado_inicial_prueba)
-
-
-
+    resultado_nodo_prueba = grafo_prueba.invoke(estado_inicial_prueba,config)
+    if "__interrupt__" in resultado_nodo_prueba:
+        print("--------------------- Ejecución pausada. Derivando a agente humano.---------------------")    
+        resultado_nodo_prueba = grafo_prueba.invoke(Command(resume="continua la ejecucion"), config)
+        print ("--------------------- se ha reanudado la ejecucion ---------------------")
 
     print("requires_human:", resultado_nodo_prueba ["requires_human"])
     print("motivo:", resultado_nodo_prueba ["interrupt_reason"])

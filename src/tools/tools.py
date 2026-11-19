@@ -26,7 +26,6 @@ def consultar_poliza(numero_poliza: str) -> dict:
         }
     else: 
         return poliza
-
     
 #funcion interna
 def _buscar_poliza(numero_poliza: str)-> Optional[dict]:
@@ -36,8 +35,6 @@ def _buscar_poliza(numero_poliza: str)-> Optional[dict]:
         if poliza["numero_poliza"] == numero_poliza:
             return poliza
     return None
-
-
 
 @tool(description=CONSULTAR_SINIESTRO_DOCSTRING)
 def consultar_siniestro(numero_siniestro: str) -> dict:
@@ -118,6 +115,12 @@ def abrir_siniestro (numero_poliza: str, descripcion: str, fecha: str, importe_e
         "importe_estimado": importe_estimado,
     }
 
+@tool 
+def generar_respuesta (consulta : str):
+    #TODO
+    respuesta = "respuesta"
+    print ("hola")
+    return respuesta 
 
 
 
