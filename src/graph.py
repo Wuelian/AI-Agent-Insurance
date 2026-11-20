@@ -1,10 +1,12 @@
 from langgraph.graph import StateGraph, START, END
 from src.state import AgentState
-from typing import Callable
+from typing import Callable,Literal
 from src.nodes.rag import rag_response
 from src.nodes.router import nodo_router
 from src.nodes.business_rules import necesita_humano
-from langgraph.types import Command, interrupt
+from src.nodes.respuesta import nodo_respuesta
+from src.nodes.guardrails import nodo_guardrails
+from langgraph.types import Command
 import sqlite3 
 from langgraph.checkpoint.sqlite import SqliteSaver
 import uuid
@@ -28,7 +30,7 @@ def init (nodo : Callable):
     
     return graph
 
-def init_grafo_pruebas(checkpointer):
+def init_grafo_pruebas(checkpointer): #Paso 7
     graph = StateGraph(AgentState) #Creamos un grafo de estados con el tipo AgentState
     graph.add_node("router",nodo_router)
     
@@ -39,12 +41,101 @@ def init_grafo_pruebas(checkpointer):
     #Compilamos el grafo de estados, añadiendo el checkpointer para tener persistencia y no perder lo que hemos hecho
     graph = graph.compile(checkpointer=checkpointer) 
     return graph    
+
+
+
+def ruta_por_dominio(estado: AgentState) -> Literal["nodoNegocio", "nodoRespuesta"]:
+    if estado.get("intent") == "fuera_dominio":
+        return "nodoRespuesta"      # fuera de dominio: no hay reglas que aplicar
+    return "nodoNegocio"            # dentro de dominio (o intent vacío): pasa por las reglas
         
+def init_grafo_paso_8(checkpointer):
+    graph = StateGraph(AgentState) #Creamos un grafo de estados con el tipo AgentState
+    graph.add_node("router",nodo_router)
+    
+    graph.add_node("nodoNegocio",necesita_humano)
+    graph.add_node("nodoRespuesta",nodo_respuesta)
+    graph.add_node("nodoGuardrails",nodo_guardrails)
         
+    graph.add_edge(START, "router")
+    graph.add_conditional_edges("router", ruta_por_dominio)   # sustituye a router → nodoNegocio
+    graph.add_edge("nodoNegocio", "nodoRespuesta")
+    graph.add_edge("nodoRespuesta", "nodoGuardrails")
+    graph.add_edge("nodoGuardrails", END) 
+    #Compilamos el grafo de estados, añadiendo el checkpointer para tener persistencia y no perder lo que hemos hecho
+    graph = graph.compile(checkpointer=checkpointer) 
+    return graph    
+        
+
+us1 = "¿Mi seguro de auto cubre lunas?"
+us2 = "Quiero saber el estado de mi póliza P-10023"
+us3 = "Se me ha roto una tubería en casa, ¿qué hago?"
+us4 = """Quiero declarar un siniestro. El 10 de noviembre de 2026 tuve un accidente con el coche: choqué contra un muro al aparcar y se ha destrozado
+todo el frontal. Mi póliza es la P-10023 y el taller calcula unos 8.000 € de reparación""" #Apertura de siniestro con importe estimado de 8.000 €
+us5 = "¿Cubre mi seguro de salud una cirugía estética?"
+us6 = "¿qué tiempo hace hoy?"
+us7 = "Quiero abrir un sieniestro con un importe de 8000 euros"
+
+
+# Paso 8 --------------------------------------------------------
+if __name__ == "__main__":
+    conexion = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
+    memoria = SqliteSaver(conexion)
+    #configuracion 
+    config = {"configurable": {"thread_id": str(uuid.uuid4())}}
+
+    while True:
+        texto = input("Tú: ")
+        grafo_prueba = init_grafo_paso_8(memoria)
+        estado_inicial_prueba = {
+            "messages": [{"role": "user", "content": texto }],
+                }
+
+        resultado_nodo_prueba = grafo_prueba.invoke(estado_inicial_prueba,config)
+        if "__interrupt__" in resultado_nodo_prueba:
+            print("--------------------- Ejecución pausada. Derivando a agente humano.---------------------")    
+            resultado_nodo_prueba = grafo_prueba.invoke(Command(resume="continua la ejecucion"), config)
+            print ("--------------------- se ha reanudado la ejecucion ---------------------")
+        
+        print(grafo_prueba.get_graph().draw_mermaid())
+
+
+        for mensaje in resultado_nodo_prueba["messages"]:
+            mensaje.pretty_print()
+
+
+
+
 
 
     
-if __name__ == "__main__":
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+#if __name__ == "__main__":
     
     # Paso 1 --------------------------------------------------------
 
@@ -99,7 +190,7 @@ if __name__ == "__main__":
     # print("tool_results:", resultado_router.get("tool_results"))
 
     
-    # print(grafo_router.get_graph().draw_mermaid())
+    # print(grafo.get_graph().draw_mermaid())
 
     # Paso 7 --------------------------------------------------------
 
@@ -116,34 +207,36 @@ if __name__ == "__main__":
     #Conectar nodos router y nodo negocio
 
     #Creamos la conexion con sqlite y creamos el checkpointer
-    conexion = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
-    memoria = SqliteSaver(conexion)
-    #configuracion 
-    config = {"configurable": {"thread_id": str(uuid.uuid4())}}
+    # conexion = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
+    # memoria = SqliteSaver(conexion)
+    # #configuracion 
+    # config = {"configurable": {"thread_id": str(uuid.uuid4())}}
 
-    
-    caso_documentacion_insuficiente = "Se me ha caído la televisión y se ha roto la pantalla, ¿me la cubre?"
-    caso_queja_formal = "quiero presentar una queja formal"
-    caso_importe_superado = "Quiero declarar un siniestro. El 10 de noviembre de 2026 tuve un accidente con el coche: " \
-    "choqué contra un muro al aparcar y se ha destrozado todo el frontal. Mi póliza es la P-10023 y el taller calcula " \
-    "unos 8.000 € de reparación"
+    # caso_documentacion_insuficiente = "Se me ha caído la televisión y se ha roto la pantalla, ¿me la cubre?"
+    # caso_queja_formal = "quiero presentar una queja formal"
+    # caso_importe_superado = "Quiero declarar un siniestro. El 10 de noviembre de 2026 tuve un accidente con el coche: " \
+    # "choqué contra un muro al aparcar y se ha destrozado todo el frontal. Mi póliza es la P-10023 y el taller calcula " \
+    # "unos 8.000 € de reparación"
+    # us3 = "Se me ha roto una tubería en casa, ¿qué hago?"
+    # prueba = "“quiero consultar mi poliza P-10023 y abrir un siniestro porque se me ha roto una tubería en casa"
 
-    grafo_prueba = init_grafo_pruebas(memoria)
-    estado_inicial_prueba = {
-        "messages": [{"role": "user", "content": caso_importe_superado }],
-            }
-    resultado_nodo_prueba = grafo_prueba.invoke(estado_inicial_prueba,config)
-    if "__interrupt__" in resultado_nodo_prueba:
-        print("--------------------- Ejecución pausada. Derivando a agente humano.---------------------")    
-        resultado_nodo_prueba = grafo_prueba.invoke(Command(resume="continua la ejecucion"), config)
-        print ("--------------------- se ha reanudado la ejecucion ---------------------")
 
-    print("requires_human:", resultado_nodo_prueba ["requires_human"])
-    print("motivo:", resultado_nodo_prueba ["interrupt_reason"])
-    print("intent:", resultado_nodo_prueba.get("intent"))
-    print("tool_results:", resultado_nodo_prueba.get("tool_results"))
-    print("queja_formal:", resultado_nodo_prueba.get("queja_formal"))
-    print("documentacion_insuficiente:", resultado_nodo_prueba.get("documentacion_insuficiente"))      
+    # grafo_prueba = init_grafo_pruebas(memoria)
+    # estado_inicial_prueba = {
+    #     "messages": [{"role": "user", "content": prueba }],
+    #         }
+    # resultado_nodo_prueba = grafo_prueba.invoke(estado_inicial_prueba,config)
+    # if "__interrupt__" in resultado_nodo_prueba:
+    #     print("--------------------- Ejecución pausada. Derivando a agente humano.---------------------")    
+    #     resultado_nodo_prueba = grafo_prueba.invoke(Command(resume="continua la ejecucion"), config)
+    #     print ("--------------------- se ha reanudado la ejecucion ---------------------")
+
+    # print("requires_human:", resultado_nodo_prueba ["requires_human"])
+    # print("motivo:", resultado_nodo_prueba ["interrupt_reason"])
+    # print("intent:", resultado_nodo_prueba.get("intent"))
+    # print("tool_results:", resultado_nodo_prueba.get("tool_results"))
+    # print("queja_formal:", resultado_nodo_prueba.get("queja_formal"))
+    # print("documentacion_insuficiente:", resultado_nodo_prueba.get("documentacion_insuficiente"))      
 
 
 

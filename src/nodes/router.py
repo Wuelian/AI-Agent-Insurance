@@ -12,6 +12,7 @@ from langchain.messages import SystemMessage, HumanMessage
 from src.prompts.prompts  import ROUTER_SYSTEM_PROMPT,INTENT_DESCRIPTION,QUEJA_FORMAL_DESCRIPTION,DOCUMENTACION_INSUFICIENTE_DESCRIPTION
 
 
+
 #ToolMessage muestra las salidas de las ejecuciones de las Tools 
 from langchain.messages import ToolMessage
 
@@ -55,12 +56,12 @@ class Answer(BaseModel):
 
 
 #------------------ Usar LLM con create Agents ------------------
-agent = create_agent(
-    model="google_genai:gemini-3.5-flash-lite",
-    tools=[consultar_siniestro,consultar_poliza,buscar_en_documentacion,abrir_siniestro], #falta añadir abrir siniestro que no esta implementado
-    system_prompt= ROUTER_SYSTEM_PROMPT,
-    response_format=Answer
-)
+# agent = create_agent(
+#     model="google_genai:gemini-3.5-flash-lite",
+#     tools=[consultar_siniestro,consultar_poliza,buscar_en_documentacion,abrir_siniestro], #falta añadir abrir siniestro que no esta implementado
+#     system_prompt= ROUTER_SYSTEM_PROMPT,
+#     response_format=Answer
+# )
 
 
 # ------------------ Usar LLM con bind tools ------------------
@@ -108,10 +109,9 @@ def nodo_router (estado: AgentState) -> dict:
     # )
 
     #------------------ haciendo un bucle con bind tools ------------------
-    query = estado["messages"][-1].content #solicitud/consulta del usuario
-
-    mensajes = [SystemMessage(content= ROUTER_SYSTEM_PROMPT), HumanMessage(content= query)]
-    #Diccionario para guardar la salida de las tools
+    #query = estado["messages"][-1].content #solicitud/consulta del usuario
+    
+    mensajes = [SystemMessage(content=ROUTER_SYSTEM_PROMPT)] + estado["messages"]    #Diccionario para guardar la salida de las tools
     tool_results = {}
 
     #vuelta manual
