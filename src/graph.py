@@ -10,6 +10,7 @@ from langgraph.types import Command
 import sqlite3 
 from langgraph.checkpoint.sqlite import SqliteSaver
 import uuid
+from src.nodes.pedir_datos import nodo_pedir_datos
 
 
 def trivial_response(estado: AgentState):
@@ -65,7 +66,34 @@ def init_grafo_paso_8(checkpointer):
     #Compilamos el grafo de estados, añadiendo el checkpointer para tener persistencia y no perder lo que hemos hecho
     graph = graph.compile(checkpointer=checkpointer) 
     return graph    
-        
+
+def ruta_tras_router(estado: AgentState) -> Literal["pedirDatos", "nodoNegocio", "nodoRespuesta"]:
+    if estado.get("intent") == "fuera_dominio":
+        return "nodoRespuesta"
+
+    siniestro = (estado.get("tool_results") or {}).get("abrir_siniestro")
+    if isinstance(siniestro, dict) and siniestro.get("error") == "datos_incompletos":
+        return "pedirDatos"
+
+    return "nodoNegocio"
+
+def init_grafo_con_nodo_pedir_datos(checkpointer):
+    graph = StateGraph(AgentState)
+    graph.add_node("router", nodo_router)
+    graph.add_node("pedirDatos", nodo_pedir_datos)
+    graph.add_node("nodoNegocio", necesita_humano)
+    graph.add_node("nodoRespuesta", nodo_respuesta)
+    graph.add_node("nodoGuardrails", nodo_guardrails)
+
+    graph.add_edge(START, "router")
+    graph.add_conditional_edges("router", ruta_tras_router)
+    graph.add_edge("pedirDatos", "router")              # bucle: con los datos nuevos, se reintenta
+    graph.add_edge("nodoNegocio", "nodoRespuesta")
+    graph.add_edge("nodoRespuesta", "nodoGuardrails")
+    graph.add_edge("nodoGuardrails", END)
+
+    return graph.compile(checkpointer=checkpointer)
+
 
 us1 = "¿Mi seguro de auto cubre lunas?"
 us2 = "Quiero saber el estado de mi póliza P-10023"
@@ -77,21 +105,64 @@ us6 = "¿qué tiempo hace hoy?"
 us7 = "Quiero abrir un sieniestro con un importe de 8000 euros"
 
 
+# # Paso 9 -------------------------------------------------------- Ya funciona con memoria (se ha ajustado en los archivos router y respuesta para que funcione)
+# if __name__ == "__main__":
+#     conexion = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
+#     memoria = SqliteSaver(conexion)
+#     #configuracion 
+#     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
+#     #grafo_prueba = init_grafo_paso_8(memoria)
+#     grafo_prueba = init_grafo_con_nodo_pedir_datos(memoria)
+
+    
+#     while True:
+#         texto = input("Tú: ")
+#         if texto.strip().lower() in ("salir", "exit"):
+#             break
+
+#         resultado = grafo_prueba.invoke({"messages": [{"role": "user", "content": texto}]}, config)
+
+#         # Puede haber varios interrupts seguidos (pedir varios datos, y luego derivar a humano)
+#         while "__interrupt__" in resultado:
+#             datos = resultado["__interrupt__"][0].value
+
+#             if datos.get("tipo") == "pedir_datos":
+#                 print("AsegurIA:", datos["pregunta"])
+#                 valor = input("Tú: ")
+#             else:  # tipo "humano"
+#                 print("--------------------- Ejecución pausada. Derivando a agente humano ---------------------")
+#                 print("Motivo:", " ".join(datos["motivos"]))
+#                 valor = "derivado"
+
+#             resultado = grafo_prueba.invoke(Command(resume=valor), config)
+
+#         print("AsegurIA:", resultado["messages"][-1].content)
+
+#     print(grafo_prueba.get_graph().draw_mermaid())
+
+
+
+#     conexion.close()
+
+
+
+
 # Paso 9 -------------------------------------------------------- Ya funciona con memoria (se ha ajustado en los archivos router y respuesta para que funcione)
 if __name__ == "__main__":
     conexion = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
     memoria = SqliteSaver(conexion)
     #configuracion 
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
+    grafo_prueba = init_grafo_paso_8(memoria)
+   
 
     while True:
         texto = input("Tú: ")
-        grafo_prueba = init_grafo_paso_8(memoria)
-        estado_inicial_prueba = {
+        mensaje = {
             "messages": [{"role": "user", "content": texto }],
                 }
 
-        resultado_nodo_prueba = grafo_prueba.invoke(estado_inicial_prueba,config)
+        resultado_nodo_prueba = grafo_prueba.invoke(mensaje,config)
         if "__interrupt__" in resultado_nodo_prueba:
             print("--------------------- Ejecución pausada. Derivando a agente humano.---------------------")    
             resultado_nodo_prueba = grafo_prueba.invoke(Command(resume="continua la ejecucion"), config)
@@ -101,6 +172,15 @@ if __name__ == "__main__":
 
         for mensaje in resultado_nodo_prueba["messages"]:
             mensaje.pretty_print()
+
+
+
+
+
+
+
+
+
 
 
 

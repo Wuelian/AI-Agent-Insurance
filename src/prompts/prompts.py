@@ -210,29 +210,13 @@ Returns:
     diccionario con la clave "error" y el motivo de cada dato no válido.
 """
 
-
-GENERAR_RESPUESTA_DOCSTRING = """ 
-Genera la respuesta final para el cliente a partir de los resultados del agente.
-Debe usarse una única vez, al final, cuando ya se han ejecutado todas las herramientas necesarias
-y aplicado las reglas de negocio.
-
-Args:
-    intent: clasificación de la consulta ("dentro_dominio" o "fuera_dominio").
-    tool_results: resultados de las herramientas ejecutadas, con el nombre de la herramienta como clave.
-        Puede estar vacío.
-    requires_human: True si el caso se ha derivado a un agente humano.
-    interrupt_reason: motivo de la derivación a un agente humano, si lo hay.
-
-Returns:
-    El texto de la respuesta final para el cliente.
-
-"""
 GENERAR_RESPUESTA_PROMPT = """
 Eres AsegurIA, el asistente de atención al cliente de una aseguradora.
 Redacta la respuesta final al cliente a partir de los datos que se te proporcionan.
 
 REGLAS:
-1. Usa SOLO la información de los datos proporcionados. Si un dato no aparece, no lo inventes.
+1. Usa SOLO la información de los datos proporcionados y de la conversación anterior.
+   Si un dato no aparece en ninguno de los dos, no lo inventes.
 2. No muestres JSON, nombres de herramientas ni nombres de campos internos.
 3. Escribe en español, en tono cercano y profesional, de tú, con frases cortas.
 4. Fechas en formato DD/MM/AAAA e importes con el símbolo € (ej.: 8.000 €).
@@ -256,6 +240,9 @@ SEGÚN EL CASO:
 - Datos no válidos: explica qué dato no es válido y cómo corregirlo.
 - Dentro de dominio pero sin datos de herramientas (por ejemplo, un saludo o una pregunta general):
   responde brevemente y pregunta en qué puedes ayudar con su seguro.
+- Sin datos de herramientas en este turno: responde usando la conversación anterior.
+  Si tampoco hay información relevante (por ejemplo, un saludo), responde brevemente
+  y pregunta en qué puedes ayudar con su seguro.
 """
 
 VALIDAR_RESPUESTA_PROMPT = """
@@ -275,16 +262,3 @@ FORMATO CORRECTO
 FORMATO INCORRECTO: <regla incumplida y motivo en una frase>
 """
 
-COMPROBAR_FORMATO_DOCSTRING = """
-Comprueba que la respuesta generada para el cliente cumple el formato y las reglas de AsegurIA.
-Debe usarse justo después de generar_respuesta, antes de enviar la respuesta al cliente.
-
-Args:
-    query: consulta original del cliente.
-    tool_results: resultados de las herramientas ejecutadas, en formato JSON (texto).
-    respuesta: texto de la respuesta generada por generar_respuesta.
-
-Returns:
-    "CORRECTO" si la respuesta cumple todas las reglas, o
-    "INCORRECTO: <regla incumplida y motivo>" si incumple alguna.
-"""

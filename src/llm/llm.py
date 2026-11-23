@@ -6,4 +6,4 @@ from dotenv import load_dotenv
 load_dotenv()
 
 #llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite", temperature=0) La temperatura se ignora en este modelo 
-llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite")
+llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite")# gemini-3.5-flash-lite

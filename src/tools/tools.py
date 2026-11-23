@@ -5,7 +5,7 @@ import chromadb
 from langchain.tools import tool
 from typing import Optional,Literal
 from datetime import date
-from src.prompts.prompts  import BUSCAR_EN_DOCUMENTACION_DOCSTRING,CONSULTAR_POLIZA_DOCSTRING,CONSULTAR_SINIESTRO_DOCSTRING,ABRIR_SINIESTRO_DOCSTRING,GENERAR_RESPUESTA_DOCSTRING,GENERAR_RESPUESTA_PROMPT,COMPROBAR_FORMATO_DOCSTRING, VALIDAR_RESPUESTA_PROMPT
+from src.prompts.prompts  import BUSCAR_EN_DOCUMENTACION_DOCSTRING,CONSULTAR_POLIZA_DOCSTRING,CONSULTAR_SINIESTRO_DOCSTRING,ABRIR_SINIESTRO_DOCSTRING
 from langchain_core.messages import SystemMessage, HumanMessage ,AIMessage
 from src.llm.llm import llm 
 
@@ -64,7 +64,7 @@ def buscar_en_documentacion(query: str, producto: Optional[Literal["auto", "hoga
 
 
 @tool(description=ABRIR_SINIESTRO_DOCSTRING)
-def abrir_siniestro (numero_poliza: str, descripcion: str, fecha: str, importe_estimado: float) -> dict:
+def abrir_siniestro (numero_poliza: str, descripcion:str, fecha:str, importe_estimado:float) -> dict:
 
     # 1. Datos que faltan: si falta alguno, no se valida nada más
     datos = {
@@ -116,29 +116,6 @@ def abrir_siniestro (numero_poliza: str, descripcion: str, fecha: str, importe_e
         "importe_estimado": importe_estimado,
     }
 
-@tool(description=GENERAR_RESPUESTA_DOCSTRING)
-def generar_respuesta(query: str, tool_results: str, historial :str ) -> str:
-    mensajes = [
-        SystemMessage(content=GENERAR_RESPUESTA_PROMPT),
-        HumanMessage(content=(
-            f"Consulta del cliente:\n{query}\n\n"
-            f"Datos obtenidos por las herramientas:\n{tool_results}"
-        )),
-    ]
-    return llm.invoke(mensajes).text
-
-
-@tool(description=COMPROBAR_FORMATO_DOCSTRING)
-def comprobar_formato(query: str, tool_results: str, respuesta: str) -> str:
-    mensajes = [
-        SystemMessage(content=VALIDAR_RESPUESTA_PROMPT),
-        HumanMessage(content=(
-            f"Consulta del cliente:\n{query}\n\n"
-            f"Datos de las herramientas:\n{tool_results}\n\n"
-            f"Respuesta a revisar:\n{respuesta}"
-        )),
-    ]
-    return llm.invoke(mensajes).text
 
 #Pruebas ------------------------------------------------------------------
 #ctrl k + ctrl u para quitar comentarios 

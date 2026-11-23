@@ -1,11 +1,8 @@
+from src.prompts.prompts  import VALIDAR_RESPUESTA_PROMPT
 import json
 from langchain_core.messages import SystemMessage, HumanMessage
-from src.tools.tools import comprobar_formato
 from src.state import AgentState
 from src.llm.llm import llm
-
-llm_con_tools = llm.bind_tools([comprobar_formato], tool_choice="comprobar_formato")
-
 
 def nodo_guardrails(estado: AgentState):
     # Respuesta generada por nodo_respuesta (último AIMessage)
@@ -19,8 +16,7 @@ def nodo_guardrails(estado: AgentState):
 
     mensajes = [
         SystemMessage(content=(
-            "Llama a la herramienta comprobar_formato con la consulta del cliente, los resultados "
-            "de las herramientas y la respuesta generada, copiándolos exactamente, sin modificar nada."
+           VALIDAR_RESPUESTA_PROMPT
         )),
         HumanMessage(content=(
             f"Consulta del cliente:\n{query}\n\n"
@@ -29,13 +25,8 @@ def nodo_guardrails(estado: AgentState):
         )),
     ]
 
-    llamada = llm_con_tools.invoke(mensajes)
+    validacion = llm.invoke(mensajes)
 
-    if llamada.tool_calls:
-        args = llamada.tool_calls[0]["args"]          # query, tool_results, respuesta
-        validacion = comprobar_formato.invoke(args)
-    else:
-        validacion = llamada.text
+    return {"validacion_respuesta": validacion.text }
 
-    print("Guardrails:", validacion)
-    return {"validacion_respuesta": validacion}
+
