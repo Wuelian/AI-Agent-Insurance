@@ -77,7 +77,7 @@ us6 = "¿qué tiempo hace hoy?"
 us7 = "Quiero abrir un sieniestro con un importe de 8000 euros"
 
 
-# Paso 8 --------------------------------------------------------
+# Paso 9 -------------------------------------------------------- Ya funciona con memoria (se ha ajustado en los archivos router y respuesta para que funcione)
 if __name__ == "__main__":
     conexion = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
     memoria = SqliteSaver(conexion)
@@ -99,12 +99,36 @@ if __name__ == "__main__":
         
         print(grafo_prueba.get_graph().draw_mermaid())
 
-
         for mensaje in resultado_nodo_prueba["messages"]:
             mensaje.pretty_print()
 
 
 
+# # Paso 8 --------------------------------------------------------
+# if __name__ == "__main__":
+#     conexion = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
+#     memoria = SqliteSaver(conexion)
+#     #configuracion 
+#     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
+
+#     while True:
+#         texto = input("Tú: ")
+#         grafo_prueba = init_grafo_paso_8(memoria)
+#         estado_inicial_prueba = {
+#             "messages": [{"role": "user", "content": texto }],
+#                 }
+
+#         resultado_nodo_prueba = grafo_prueba.invoke(estado_inicial_prueba,config)
+#         if "__interrupt__" in resultado_nodo_prueba:
+#             print("--------------------- Ejecución pausada. Derivando a agente humano.---------------------")    
+#             resultado_nodo_prueba = grafo_prueba.invoke(Command(resume="continua la ejecucion"), config)
+#             print ("--------------------- se ha reanudado la ejecucion ---------------------")
+        
+#         print(grafo_prueba.get_graph().draw_mermaid())
+
+
+#         for mensaje in resultado_nodo_prueba["messages"]:
+#             mensaje.pretty_print()
 
 
 
