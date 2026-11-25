@@ -220,7 +220,7 @@ def abrir_siniestro (numero_poliza: str, descripcion:str, fecha:str, importe_est
 
 # Run the server
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(transport="stdio")
 
 
 
