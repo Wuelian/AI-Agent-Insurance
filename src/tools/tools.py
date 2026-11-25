@@ -6,8 +6,6 @@ from langchain.tools import tool
 from typing import Optional,Literal
 from datetime import date
 from src.prompts.prompts  import BUSCAR_EN_DOCUMENTACION_DOCSTRING,CONSULTAR_POLIZA_DOCSTRING,CONSULTAR_SINIESTRO_DOCSTRING,ABRIR_SINIESTRO_DOCSTRING
-from langchain_core.messages import SystemMessage, HumanMessage ,AIMessage
-from src.llm.llm import llm 
 
 
 ruta_polizas = "./data/db/polizas_clientes.json"

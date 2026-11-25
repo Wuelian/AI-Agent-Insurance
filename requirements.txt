@@ -24,3 +24,10 @@ pytest
 
 #persistencia checkpointer 
 langgraph-checkpoint-sqlite
+
+
+#MCP 
+mcp[cli]<2
+uv #para ejecutar la terminal del servidor 
+
+
