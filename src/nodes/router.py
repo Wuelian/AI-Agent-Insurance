@@ -8,15 +8,15 @@ import json
 from src.llm.llm import llm 
 from langchain.messages import SystemMessage, HumanMessage
 
-
 from src.prompts.prompts  import ROUTER_SYSTEM_PROMPT,INTENT_DESCRIPTION,QUEJA_FORMAL_DESCRIPTION,DOCUMENTACION_INSUFICIENTE_DESCRIPTION
-
-
 
 #ToolMessage muestra las salidas de las ejecuciones de las Tools 
 from langchain.messages import ToolMessage
-
 from src.tools.tools import consultar_poliza,consultar_siniestro,buscar_en_documentacion,abrir_siniestro    
+
+from src.tools.mcp_client import get_mcp_tools
+import asyncio
+
 
 truststore.inject_into_ssl()
 load_dotenv()
@@ -55,6 +55,43 @@ class Answer(BaseModel):
     )
 
 
+
+def normalizar_resultado_mcp(resultado):
+    """Convierte el resultado de una tool MCP en un objeto de Python
+    (dict, list, str...) a partir de sus bloques de contenido."""
+
+    # Caso 1: ya es un objeto de Python utilizable
+    if resultado is None or isinstance(resultado, (dict, int, float, bool)):
+        return resultado
+
+    # Caso 2: texto suelto
+    if isinstance(resultado, str):
+        textos = [resultado]
+
+    # Caso 3: lista de bloques de contenido ({'type': 'text', 'text': ...})
+    elif isinstance(resultado, list) and all(
+        isinstance(b, dict) and "type" in b for b in resultado
+    ):
+        textos = [b.get("text", "") for b in resultado if b.get("type") == "text"]
+
+    # Cualquier otra cosa (por ejemplo, una lista normal): se devuelve tal cual
+    else:
+        return resultado
+
+    # Cada texto se intenta interpretar como JSON; si no lo es, se deja como texto
+    valores = []
+    for texto in textos:
+        try:
+            valores.append(json.loads(texto))
+        except (json.JSONDecodeError, TypeError):
+            valores.append(texto)
+
+    # Un solo bloque → su valor; varios bloques → lista de valores
+    return valores[0] if len(valores) == 1 else valores
+
+    
+
+
 #------------------ Usar LLM con create Agents ------------------
 # agent = create_agent(
 #     model="google_genai:gemini-3.5-flash-lite",
@@ -65,7 +102,11 @@ class Answer(BaseModel):
 
 
 # ------------------ Usar LLM con bind tools ------------------
-tools = [consultar_siniestro,consultar_poliza,buscar_en_documentacion,abrir_siniestro]
+#tools = [consultar_siniestro,consultar_poliza,buscar_en_documentacion,abrir_siniestro]
+
+#llamada para usar el MCP
+tools = asyncio.run(get_mcp_tools())
+
 tools_por_nombre = {t.name: t for t in tools}
 #usamos bind tools para pasarle las tools que necesita el llm
 llm_con_tools = llm.bind_tools(tools= tools)
@@ -76,8 +117,7 @@ MAX_VUELTAS = 5
 
 
 
-
-def nodo_router (estado: AgentState) -> dict:
+async def nodo_router (estado: AgentState) -> dict:
 
     # # ------------------ Con create agent ---------------------------
     # query = estado["messages"][-1].content #solicitud/consulta del usuario
@@ -117,7 +157,7 @@ def nodo_router (estado: AgentState) -> dict:
     #vuelta manual
     for vuelta in range(MAX_VUELTAS ):
 
-        respuesta_con_bindtools = llm_con_tools.invoke(mensajes)
+        respuesta_con_bindtools = await llm_con_tools.ainvoke(mensajes)
         mensajes.append(respuesta_con_bindtools)          # ← la línea que faltaba
 
         #si no se llama a ninguna tool acaba el bucle
@@ -127,7 +167,7 @@ def nodo_router (estado: AgentState) -> dict:
 
         for llamada in respuesta_con_bindtools.tool_calls:
             tool = tools_por_nombre[llamada["name"]]
-            resultado = tool.invoke(llamada["args"])
+            resultado = normalizar_resultado_mcp(await tool.ainvoke(llamada["args"]))
             #Guarda el contenido de los resultados dentro del campo de toolsresults 
             tool_results[llamada["name"]] = resultado   
             

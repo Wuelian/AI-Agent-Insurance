@@ -29,5 +29,6 @@ langgraph-checkpoint-sqlite
 #MCP 
 mcp[cli]<2
 uv #para ejecutar la terminal del servidor 
-
+langchain[mcp]
+aiosqlite
 

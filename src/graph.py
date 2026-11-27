@@ -8,9 +8,11 @@ from src.nodes.respuesta import nodo_respuesta
 from src.nodes.guardrails import nodo_guardrails
 from langgraph.types import Command
 import sqlite3 
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 import uuid
 from src.nodes.pedir_datos import nodo_pedir_datos
+import asyncio
+
 
 
 def trivial_response(estado: AgentState):
@@ -42,8 +44,6 @@ def init_grafo_pruebas(checkpointer): #Paso 7
     #Compilamos el grafo de estados, añadiendo el checkpointer para tener persistencia y no perder lo que hemos hecho
     graph = graph.compile(checkpointer=checkpointer) 
     return graph    
-
-
 
 def ruta_por_dominio(estado: AgentState) -> Literal["nodoNegocio", "nodoRespuesta"]:
     if estado.get("intent") == "fuera_dominio":
@@ -95,6 +95,34 @@ def init_grafo_con_nodo_pedir_datos(checkpointer):
     return graph.compile(checkpointer=checkpointer)
 
 
+async def main ():
+    #conexion = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
+    async with AsyncSqliteSaver.from_conn_string("checkpoints.sqlite") as memoria:
+
+        #configuracion 
+        config = {"configurable": {"thread_id": str(uuid.uuid4())}}
+        grafo = init_grafo_paso_8(memoria)
+
+
+        while True:
+            texto = input("Tú: ")
+            mensaje = {
+                "messages": [{"role": "user", "content": texto }],
+                    }
+
+            resultado = await grafo.ainvoke(mensaje,config)
+            if "__interrupt__" in resultado :
+                print("--------------------- Ejecución pausada. Derivando a agente humano.---------------------")    
+                resultado  = await grafo.ainvoke(Command(resume="continua la ejecucion"), config)
+                print ("--------------------- se ha reanudado la ejecucion ---------------------")
+            
+            print(grafo.get_graph().draw_mermaid())
+
+            for mensaje in resultado ["messages"]:
+                mensaje.pretty_print()
+
+
+
 us1 = "¿Mi seguro de auto cubre lunas?"
 us2 = "Quiero saber el estado de mi póliza P-10023"
 us3 = "Se me ha roto una tubería en casa, ¿qué hago?"
@@ -103,6 +131,16 @@ todo el frontal. Mi póliza es la P-10023 y el taller calcula unos 8.000 € de 
 us5 = "¿Cubre mi seguro de salud una cirugía estética?"
 us6 = "¿qué tiempo hace hoy?"
 us7 = "Quiero abrir un sieniestro con un importe de 8000 euros"
+
+
+
+
+
+# Para el MCP ---------------------------------------------------------------------------------------------------------------------
+if __name__ == "__main__":
+    asyncio.run(main())
+
+
 
 
 # # Paso 9 -------------------------------------------------------- Ya funciona con memoria (se ha ajustado en los archivos router y respuesta para que funcione)
@@ -147,41 +185,33 @@ us7 = "Quiero abrir un sieniestro con un importe de 8000 euros"
 
 
 
-# Paso 9 -------------------------------------------------------- Ya funciona con memoria (se ha ajustado en los archivos router y respuesta para que funcione)
-if __name__ == "__main__":
-    conexion = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
-    memoria = SqliteSaver(conexion)
-    #configuracion 
-    config = {"configurable": {"thread_id": str(uuid.uuid4())}}
-    grafo_prueba = init_grafo_paso_8(memoria)
+
+
+# # Paso 9 -------------------------------------------------------- Ya funciona con memoria (se ha ajustado en los archivos router y respuesta para que funcione)
+# if __name__ == "__main__":
+#     conexion = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
+#     memoria = SqliteSaver(conexion)
+#     #configuracion 
+#     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
+#     grafo_prueba = init_grafo_paso_8(memoria)
    
 
-    while True:
-        texto = input("Tú: ")
-        mensaje = {
-            "messages": [{"role": "user", "content": texto }],
-                }
+#     while True:
+#         texto = input("Tú: ")
+#         mensaje = {
+#             "messages": [{"role": "user", "content": texto }],
+#                 }
 
-        resultado_nodo_prueba = grafo_prueba.invoke(mensaje,config)
-        if "__interrupt__" in resultado_nodo_prueba:
-            print("--------------------- Ejecución pausada. Derivando a agente humano.---------------------")    
-            resultado_nodo_prueba = grafo_prueba.invoke(Command(resume="continua la ejecucion"), config)
-            print ("--------------------- se ha reanudado la ejecucion ---------------------")
+#         resultado_nodo_prueba = grafo_prueba.invoke(mensaje,config)
+#         if "__interrupt__" in resultado_nodo_prueba:
+#             print("--------------------- Ejecución pausada. Derivando a agente humano.---------------------")    
+#             resultado_nodo_prueba = grafo_prueba.invoke(Command(resume="continua la ejecucion"), config)
+#             print ("--------------------- se ha reanudado la ejecucion ---------------------")
         
-        print(grafo_prueba.get_graph().draw_mermaid())
+#         print(grafo_prueba.get_graph().draw_mermaid())
 
-        for mensaje in resultado_nodo_prueba["messages"]:
-            mensaje.pretty_print()
-
-
-
-
-
-
-
-
-
-
+#         for mensaje in resultado_nodo_prueba["messages"]:
+#             mensaje.pretty_print()
 
 
 # # Paso 8 --------------------------------------------------------
@@ -209,31 +239,6 @@ if __name__ == "__main__":
 
 #         for mensaje in resultado_nodo_prueba["messages"]:
 #             mensaje.pretty_print()
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -87,7 +87,7 @@ Returns:
 """
 
 #Integracion del MCP 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver  import MCPServer
 from datetime import date
 from typing import Optional,Literal
 import json
@@ -95,6 +95,7 @@ import chromadb
 import os
 from pathlib import Path
 import os 
+import logging
 
 # Carpeta donde está este fichero: .../agente-seguros/mcp_servers/policy_server
 CARPETA_ACTUAL = Path(__file__).resolve().parent
@@ -107,17 +108,31 @@ DATA_DIR = Path(os.getenv("DATA_DIR", RAIZ_PROYECTO / "data"))
 CHROMA_DIR = Path(os.getenv("CHROMA_DIR", RAIZ_PROYECTO / "chroma_db"))
 
 # Create an MCP server
-mcp = FastMCP("MCP_Service")
+mcp = MCPServer("MCP_Service")
 
 collection = chromadb.PersistentClient(path=CHROMA_DIR).get_collection(name="embeddings_collection")
 ruta_polizas =  DATA_DIR / "db/polizas_clientes.json"
 ruta_siniestros =  DATA_DIR / "db/siniestros_historico.json"
+
+#Configuracion para el config
+logging.basicConfig(
+    filename=str(RAIZ_PROYECTO / "mcp_server.log"),
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    encoding="utf-8",
+    force = True
+)
+log = logging.getLogger("policy_server")
+
+log.info("Servidor iniciado. DATA_DIR=%s CHROMA_DIR=%s", DATA_DIR, CHROMA_DIR)
+
 
 
 
 #@tool(parse_docstring=True) Como ya no usamos el literal dentro de la funcion se la pasamos de la siguiente forma
 @mcp.tool(description=CONSULTAR_POLIZA_DOCSTRING)
 def consultar_poliza(numero_poliza: str) -> dict:
+    log.info("consultar_poliza(numero_poliza=%s)", numero_poliza)
 
     poliza = _buscar_poliza(numero_poliza) 
     if poliza is None:
@@ -139,8 +154,9 @@ def _buscar_poliza(numero_poliza: str)-> Optional[dict]:
 
 @mcp.tool(description=CONSULTAR_SINIESTRO_DOCSTRING)
 def consultar_siniestro(numero_siniestro: str) -> dict:
-  
-    with open(ruta_siniestros, "r", encoding="utf-8") as f:
+    log.info("consultar_siniestro(numero_siniestro=%s)", numero_siniestro)
+
+    with open(ruta_siniestros, "r", encoding="utf-8") as f: 
         siniestros = json.load(f)
     for siniestro in siniestros:
         if siniestro["numero_siniestro"] == numero_siniestro:
@@ -153,6 +169,7 @@ def consultar_siniestro(numero_siniestro: str) -> dict:
 
 @mcp.tool(description=BUSCAR_EN_DOCUMENTACION_DOCSTRING)
 def buscar_en_documentacion(query: str, producto: Optional[Literal["auto", "hogar", "salud","general"]] = None) -> list[str]:
+    log.info("buscar_en_documentacion(query=%r, producto=%s)", query, producto)
 
     argumentos = {"query_texts": [query], "n_results": 3}
     if producto is not None:
@@ -165,6 +182,7 @@ def buscar_en_documentacion(query: str, producto: Optional[Literal["auto", "hoga
 
 @mcp.tool(description=ABRIR_SINIESTRO_DOCSTRING)
 def abrir_siniestro (numero_poliza: str, descripcion:str, fecha:str, importe_estimado:float) -> dict:
+    log.info("abrir_siniestro(numero_poliza=%s, fecha=%s, importe_estimado=%s"),
 
     # 1. Datos que faltan: si falta alguno, no se valida nada más
     datos = {

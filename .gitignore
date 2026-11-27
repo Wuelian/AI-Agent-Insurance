@@ -22,3 +22,6 @@ __pycache__/
 # Editor / sistema
 .vscode/
 .DS_Store
+
+#Logs del mcp
+mcp_server.log
